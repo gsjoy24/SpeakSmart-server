@@ -15,7 +15,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.nbdk5o7.mongodb.net/?retryWrites=true&w=majority'`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.nbdk5o7.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -35,7 +35,8 @@ async function run() {
 	try {
 		// Connect the client to the server	(optional starting in v4.7)
 		await client.connect();
-		const usersCollection = client.db('RhythmRoam').collection('users');
+		const userCollection = client.db('speakSmart').collection('users');
+		const classCollection = client.db('speakSmart').collection('classes');
 
 		// generate JWT
 		app.post('/jwt', async (req, res) => {
@@ -53,7 +54,19 @@ async function run() {
 			const updatedDoc = {
 				$set: user
 			};
-			const result = await usersCollection.updateOne(query, updatedDoc, options);
+			const result = await userCollection.updateOne(query, updatedDoc, options);
+			res.send(result);
+		});
+
+		// get all users
+		app.get('/users', async (req, res) => {
+			const result = await userCollection.find().toArray();
+			res.send(result);
+		});
+
+		// get all classes
+		app.get('/popular-classes', async (req, res) => {
+			const result = await classCollection.find().sort({ enrolledStudents: -1 }).limit(6).toArray();
 			res.send(result);
 		});
 
