@@ -64,9 +64,24 @@ async function run() {
 			res.send(result);
 		});
 
-		// get all classes
+		// get popular classes
 		app.get('/popular-classes', async (req, res) => {
 			const result = await classCollection.find().sort({ enrolledStudents: -1 }).limit(6).toArray();
+			res.send(result);
+		});
+
+		// get popular instructors
+		app.get('/popular-instructors', async (req, res) => {
+			const result = await userCollection
+				.find({ role: 'instructor' })
+				.sort({ enrolledStudents: -1 })
+				.limit(6)
+				.toArray();
+			res.send(result);
+		});
+		// get all instructors
+		app.get('/instructors', async (req, res) => {
+			const result = await userCollection.find({ role: 'instructor' }).toArray();
 			res.send(result);
 		});
 
