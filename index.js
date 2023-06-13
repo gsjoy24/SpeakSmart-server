@@ -66,7 +66,22 @@ async function run() {
 
 		// get popular classes
 		app.get('/popular-classes', async (req, res) => {
-			const result = await classCollection.find().sort({ enrolledStudents: -1 }).limit(6).toArray();
+			const result = await classCollection
+				.find({ status: 'approved' })
+				.sort({ enrolledStudents: -1 })
+				.limit(6)
+				.toArray();
+			res.send(result);
+		});
+
+		// get approved and pending classes
+		app.get('/classes', async (req, res) => {
+			const status = req.query.status;
+			console.log({ status });
+			if (!status && status !== 'approved' && status !== 'pending') {
+				return res.send([]);
+			}
+			const result = await classCollection.find({ status }).toArray();
 			res.send(result);
 		});
 
@@ -79,9 +94,17 @@ async function run() {
 				.toArray();
 			res.send(result);
 		});
+
 		// get all instructors
 		app.get('/instructors', async (req, res) => {
 			const result = await userCollection.find({ role: 'instructor' }).toArray();
+			res.send(result);
+		});
+
+		// get the user role
+		app.get('/users/:email', async (req, res) => {
+			const email = req.params.email;
+			const result = await userCollection.findOne({ email });
 			res.send(result);
 		});
 
