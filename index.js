@@ -1,8 +1,9 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
-require('dotenv').config();
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
+const stripe = require('stripe')(process.env.PAYMENT_KEY);
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
@@ -53,13 +54,29 @@ async function run() {
 		await client.connect();
 		const userCollection = client.db('speakSmart').collection('users');
 		const classCollection = client.db('speakSmart').collection('classes');
-		const selectedClassCollection = client.db('speakSmart').collection('selectedClass');
+		const selectedClassCollection = client.db('speakSmart').collection('selectedClasses');
+		const enrolledClassCollection = client.db('speakSmart').collection('enrolledClasses');
+		const paymentCollection = client.db('speakSmart').collection('payments');
 
 		// generate JWT
 		app.post('/jwt', async (req, res) => {
 			const email = req.body;
 			const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
 			res.send({ token });
+		});
+
+		// create payment intent
+		app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+			const { price } = req.body;
+			const amount = price * 100;
+			const paymentIntent = await stripe.paymentIntents.create({
+				amount,
+				currency: 'usd',
+				payment_method_types: ['card']
+			});
+			res.send({
+				clientSecret: paymentIntent.client_secret
+			});
 		});
 
 		// save user information
@@ -101,10 +118,9 @@ async function run() {
 		// get a single class
 		app.get('/selected-class/:id', async (req, res) => {
 			const id = req.params.id;
-			console.log(id);
+
 			const query = { _id: new ObjectId(id) };
 			const result = await selectedClassCollection.findOne(query);
-			console.log(result);
 			res.send(result);
 		});
 
@@ -134,6 +150,14 @@ async function run() {
 			res.send(result);
 		});
 
+		// get a class
+		app.get('/classes/:id', async (req, res) => {
+			const id = req.params.id;
+			const query = { _id: new ObjectId(id) };
+			const result = await classCollection.findOne(query);
+			res.send(result);
+		});
+
 		// select a class
 		app.post('/select-class', async (req, res) => {
 			const selectedClass = req.body;
@@ -141,7 +165,7 @@ async function run() {
 			res.send(result);
 		});
 
-		// get selected classes of current user
+		// get selected classes of the current user
 		app.get('/selected-classes/:email', verifyJWT, async (req, res) => {
 			const email = req.params.email;
 			if (!email) {
@@ -156,6 +180,30 @@ async function run() {
 			const id = req.params.id;
 			const query = { _id: new ObjectId(id) };
 			const result = await selectedClassCollection.deleteOne(query);
+			res.send(result);
+		});
+
+		// add a class to the enrolled collection
+		app.post('/enrolled-classes', verifyJWT, async (req, res) => {
+			const enrolledClass = req.body;
+			const result = await enrolledClassCollection.insertOne(enrolledClass);
+			res.send(result);
+		});
+		// add payment info
+		app.post('/payments', verifyJWT, async (req, res) => {
+			const payment = req.body;
+			const result = await paymentCollection.insertOne(payment);
+			res.send(result);
+		});
+
+		app.patch('/classes/:id', verifyJWT, async (req, res) => {
+			const id = req.params.id;
+			const info = req.body;
+			const query = { _id: new ObjectId(id) };
+			const updatedDoc = {
+				$set: { ...info }
+			};
+			const result = await classCollection.updateOne(query, updatedDoc);
 			res.send(result);
 		});
 
