@@ -98,6 +98,16 @@ async function run() {
 			res.send(result);
 		});
 
+		// get a single class
+		app.get('/selected-class/:id', async (req, res) => {
+			const id = req.params.id;
+			console.log(id);
+			const query = { _id: new ObjectId(id) };
+			const result = await selectedClassCollection.findOne(query);
+			console.log(result);
+			res.send(result);
+		});
+
 		// get top 6 popular instructors
 		app.get('/popular-instructors', async (req, res) => {
 			const result = await userCollection
@@ -138,6 +148,14 @@ async function run() {
 				return res.send([]);
 			}
 			const result = await selectedClassCollection.find({ student: email }).toArray();
+			res.send(result);
+		});
+
+		// delete a selected class
+		app.delete('/selected-class/:id', verifyJWT, async (req, res) => {
+			const id = req.params.id;
+			const query = { _id: new ObjectId(id) };
+			const result = await selectedClassCollection.deleteOne(query);
 			res.send(result);
 		});
 
