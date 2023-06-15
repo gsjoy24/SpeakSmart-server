@@ -196,6 +196,13 @@ async function run() {
 			res.send(result);
 		});
 
+		// get all payments of the user
+		app.get('/payments/:email', verifyJWT, async (req, res) => {
+			const email = req.params.email;
+			const result = await paymentCollection.find({ studentEmail: email }).toArray();
+			res.send(result);
+		});
+
 		app.patch('/classes/:id', verifyJWT, async (req, res) => {
 			const id = req.params.id;
 			const info = req.body;
