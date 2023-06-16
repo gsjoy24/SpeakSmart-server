@@ -108,7 +108,6 @@ async function run() {
 		// add new class
 		app.post('/classes', verifyJWT, async (req, res) => {
 			const newClass = req.body;
-			console.log(newClass);
 			const result = await classCollection.insertOne(newClass);
 			res.send(result);
 		});
@@ -154,7 +153,7 @@ async function run() {
 			if ((status && status === 'approved') || status === 'pending') {
 				query = { status };
 			}
-			const result = await classCollection.find(query).toArray();
+			const result = await classCollection.find(query).sort({ status: -1 }).toArray();
 			res.send(result);
 		});
 
@@ -204,6 +203,18 @@ async function run() {
 			res.send(result);
 		});
 
+		// approve a class
+		app.patch('/approve-class/:id', async (req, res) => {
+			const id = req.params.id;
+			const query = { _id: new ObjectId(id) };
+			const options = { upsert: true };
+			const updatedDoc = {
+				$set: { status: 'approved', checked: true }
+			};
+			const result = await classCollection.updateOne(query, updatedDoc, options);
+			res.send(result);
+		});
+
 		// get enrolled classes of the current user
 		app.get('/enrolled-classes/:email', verifyJWT, async (req, res) => {
 			const email = req.params.email;
@@ -243,8 +254,8 @@ async function run() {
 		});
 
 		app.patch('/classes/:id', verifyJWT, async (req, res) => {
-			const id = req.params.id;
 			const info = req.body;
+			const id = req.params.id;
 			const query = { _id: new ObjectId(id) };
 			const updatedDoc = {
 				$set: { ...info }
