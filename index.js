@@ -105,6 +105,13 @@ async function run() {
 			res.send(result);
 		});
 
+		// add new class
+		app.post('/classes', verifyJWT, async (req, res) => {
+			const newClass = req.body;
+			console.log(newClass);
+			const result = await classCollection.insertOne(newClass);
+			res.send(result);
+		});
 		// get top 6 popular classes
 		app.get('/popular-classes', async (req, res) => {
 			const result = await classCollection
@@ -143,10 +150,18 @@ async function run() {
 		// get all approved and pending classes
 		app.get('/classes', async (req, res) => {
 			const status = req.query.status;
-			if (!status && status !== 'approved' && status !== 'pending') {
-				return res.send([]);
+			let query = {};
+			if ((status && status === 'approved') || status === 'pending') {
+				query = { status };
 			}
-			const result = await classCollection.find({ status }).toArray();
+			const result = await classCollection.find(query).toArray();
+			res.send(result);
+		});
+
+		// get all approved and pending classes of the current user
+		app.get('/instructor-classes/:email', async (req, res) => {
+			const instructorEmail = req.params.email;
+			const result = await classCollection.find({ instructorEmail }).toArray();
 			res.send(result);
 		});
 
@@ -155,6 +170,20 @@ async function run() {
 			const id = req.params.id;
 			const query = { _id: new ObjectId(id) };
 			const result = await classCollection.findOne(query);
+			res.send(result);
+		});
+
+		// update class
+		app.put('/classes/:id', async (req, res) => {
+			const id = req.params.id;
+			const info = req.body;
+
+			const query = { _id: new ObjectId(id) };
+			const options = { upsert: true };
+			const updatedDoc = {
+				$set: info
+			};
+			const result = await classCollection.updateOne(query, updatedDoc, options);
 			res.send(result);
 		});
 
@@ -172,6 +201,16 @@ async function run() {
 				return res.send([]);
 			}
 			const result = await selectedClassCollection.find({ student: email }).toArray();
+			res.send(result);
+		});
+
+		// get enrolled classes of the current user
+		app.get('/enrolled-classes/:email', verifyJWT, async (req, res) => {
+			const email = req.params.email;
+			if (!email) {
+				return res.send([]);
+			}
+			const result = await enrolledClassCollection.find({ student: email }).toArray();
 			res.send(result);
 		});
 
@@ -196,10 +235,10 @@ async function run() {
 			res.send(result);
 		});
 
-		// get all payments of the user
+		// get all payments of the current user
 		app.get('/payments/:email', verifyJWT, async (req, res) => {
 			const email = req.params.email;
-			const result = await paymentCollection.find({ studentEmail: email }).toArray();
+			const result = await paymentCollection.find({ studentEmail: email }).sort({ date: -1 }).toArray();
 			res.send(result);
 		});
 
