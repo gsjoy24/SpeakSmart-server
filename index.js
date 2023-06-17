@@ -92,6 +92,19 @@ async function run() {
 			res.send(result);
 		});
 
+		// change user role
+		app.patch('/user-role/:id', verifyJWT, async (req, res) => {
+			const id = req.params.id;
+			const role = req.body;
+			console.log(role);
+			const query = { _id: new ObjectId(id) };
+			const updatedDoc = {
+				$set: { ...role }
+			};
+			const result = await userCollection.updateOne(query, updatedDoc);
+			res.send(result);
+		});
+
 		// get the user role
 		app.get('/users/:email', async (req, res) => {
 			const email = req.params.email;
@@ -100,7 +113,7 @@ async function run() {
 		});
 
 		// get all users
-		app.get('/users', async (req, res) => {
+		app.get('/users', verifyJWT, async (req, res) => {
 			const result = await userCollection.find().toArray();
 			res.send(result);
 		});
@@ -158,7 +171,7 @@ async function run() {
 		});
 
 		// get all approved and pending classes of the current user
-		app.get('/instructor-classes/:email', async (req, res) => {
+		app.get('/instructor-classes/:email', verifyJWT, async (req, res) => {
 			const instructorEmail = req.params.email;
 			const result = await classCollection.find({ instructorEmail }).toArray();
 			res.send(result);
@@ -173,7 +186,7 @@ async function run() {
 		});
 
 		// update class
-		app.put('/classes/:id', async (req, res) => {
+		app.put('/classes/:id', verifyJWT, async (req, res) => {
 			const id = req.params.id;
 			const info = req.body;
 
@@ -204,7 +217,7 @@ async function run() {
 		});
 
 		// approve a class
-		app.patch('/check-class/:id', async (req, res) => {
+		app.patch('/check-class/:id', verifyJWT, async (req, res) => {
 			const id = req.params.id;
 			const info = req.body;
 			const query = { _id: new ObjectId(id) };
