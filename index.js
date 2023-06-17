@@ -204,12 +204,13 @@ async function run() {
 		});
 
 		// approve a class
-		app.patch('/approve-class/:id', async (req, res) => {
+		app.patch('/check-class/:id', async (req, res) => {
 			const id = req.params.id;
+			const info = req.body;
 			const query = { _id: new ObjectId(id) };
 			const options = { upsert: true };
 			const updatedDoc = {
-				$set: { status: 'approved', checked: true }
+				$set: { ...info }
 			};
 			const result = await classCollection.updateOne(query, updatedDoc, options);
 			res.send(result);
